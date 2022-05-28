@@ -2,10 +2,12 @@
 
 import os
 import argparse
+import subprocess
 
 parser = argparse.ArgumentParser(description = """
 Kubebkwd, a reverse proxy for your local applications into kubernetes.
 Note, this will only work with a local kubernetes cluster where your local machine is exposed with host.docker.internal e.g. with docker-desktop.
+To revert, simply re-deploy your container to the cluster as you normally would using kubectl apply. This will also litter a service postfixed with 'extname' which you can remove manually.
 """)
 parser.add_argument('service', type=str, help='The name of your kubernetes service')
 parser.add_argument('containerPort', type=int, help='The port your service exposes in the kubernetes cluster')
@@ -18,24 +20,50 @@ containerPort = args.containerPort
 localPort = args.localPort
 namespace = args.namespace
 
+namespaceArg = ""
+if namespace != None:
+    namespaceArg = "-n {namespace}".format(namespace=namespace)
+
 print("namespace ", namespace)
+
+
+def getServiceSelectorTag(serviceName): 
+    result = subprocess.check_output("kubectl describe {namespaceArg} service {serviceName}".format(serviceName=serviceName, namespaceArg=namespaceArg), shell=True).decode("utf-8")
+
+    lines = result.split("\n")
+    print(lines)
+    for line in lines:
+        split = line.split(": ") #could use a yaml parser? meh
+        if len(split) == 2: 
+            key, value = split
+            if(key == "Selector"):
+                return value.strip()
+
+selector = getServiceSelectorTag(service)
+print("selector ", selector)
+deploymentName = subprocess.check_output("""kubectl get deployments --no-headers -l {selector} | awk '{{print $1}}'""".format(selector = selector), shell = True).decode("utf-8")
+print("deployment name:", deploymentName)
+print("Selector is ",  selector)
+tagKey, tagValue = selector.split("=")
+tag = tagKey.strip() + ": " + tagValue.strip()
+
 
 template = """
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {service}-deployment
+  name: {deployment}
   labels:
-    app: {service}
+    {tag}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {service}
+      {tag}
   template:
     metadata:
       labels:
-        app: {service}
+        {tag}
     spec:
       containers:
         - name: {service}
@@ -60,12 +88,12 @@ with open(generated_file_name, 'w') as file:
     file_contents = template.format(
         service=service,
         containerPort=containerPort,
-        localPort=localPort
+        localPort=localPort,
+        deployment=deploymentName,
+        tag=tag
     )
     file.write(file_contents)
 
-if namespace == None or namespace == "":
-    os.system("""kubectl apply -f ./{generated_file_name}""".format(generated_file_name=generated_file_name))
-else:
-    os.system("""kubectl apply -n {namespace} -f ./{generated_file_name}""".format(generated_file_name=generated_file_name, namespace=namespace))
+
+os.system("""kubectl apply {namespaceArg} -f ./{generated_file_name}""".format(generated_file_name=generated_file_name, namespaceArg=namespaceArg))
 
