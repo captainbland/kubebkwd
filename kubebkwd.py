@@ -5,7 +5,7 @@ import argparse
 import subprocess
 
 parser = argparse.ArgumentParser(description = """
-Kubebkwd, a reverse proxy for your local applications into kubernetes.
+Kubebkwd - a reverse proxy from your kubernetes cluster to your local
 Note, this will only work with a local kubernetes cluster where your local machine is exposed with host.docker.internal e.g. with docker-desktop.
 To revert, simply re-deploy your container to the cluster as you normally would using kubectl apply. This will also litter a service postfixed with 'extname' which you can remove manually.
 """)
@@ -25,7 +25,6 @@ if namespace != None:
     namespaceArg = "-n {namespace}".format(namespace=namespace)
 
 print("namespace ", namespace)
-
 
 def getServiceSelectorTag(serviceName): 
     result = subprocess.check_output("kubectl describe {namespaceArg} service {serviceName}".format(serviceName=serviceName, namespaceArg=namespaceArg), shell=True).decode("utf-8")
@@ -84,6 +83,7 @@ spec:
 """
 
 generated_file_name = "generated/{service}-deployment.yaml".format(service=service)
+os.system("mkdir generated")
 with open(generated_file_name, 'w') as file:
     file_contents = template.format(
         service=service,
