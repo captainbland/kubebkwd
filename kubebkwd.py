@@ -13,16 +13,20 @@ parser.add_argument('service', type=str, help='The name of your kubernetes servi
 parser.add_argument('containerPort', type=int, help='The port your service exposes in the kubernetes cluster')
 parser.add_argument('localPort', type=int, help='The port your application is running on on your local machine')
 parser.add_argument('--namespace', type=str, help='Kubernetes namespace. Otherwise will default to whatever you have set with kubens')
+parser.add_argument('--hostDomain', type=str, help='Host domain. e.g. host.docker.internal for docker-desktop, host.minikube.internal for minikube, host.k3d.internal for k3s', default="host.docker.internal")
 args = parser.parse_args()
 
 service = args.service
 containerPort = args.containerPort
 localPort = args.localPort
 namespace = args.namespace
+hostDomain = args.hostDomain
 
 namespaceArg = ""
 if namespace != None:
     namespaceArg = "-n {namespace}".format(namespace=namespace)
+
+
 
 print("namespace ", namespace)
 
@@ -79,7 +83,7 @@ metadata:
   name: {service}-extname-service
 spec:
   type: ExternalName
-  externalName: host.docker.internal
+  externalName: {hostDomain}
 """
 
 generated_file_name = "generated/{service}-deployment.yaml".format(service=service)
@@ -90,7 +94,8 @@ with open(generated_file_name, 'w') as file:
         containerPort=containerPort,
         localPort=localPort,
         deployment=deploymentName,
-        tag=tag
+        tag=tag,
+        hostDomain=hostDomain
     )
     file.write(file_contents)
 
