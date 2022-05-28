@@ -1,0 +1,33 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minimal-2-deployment
+  labels:
+    app: minimal-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minimal-2
+  template:
+    metadata:
+      labels:
+        app: minimal-2
+    spec:
+      containers:
+        - name: minimal-2
+          image: maxmcd/tcp-proxy@sha256:892791987015e408d40c35bfd50e3d15dedbf462b8dc225ae4dcdd2abfd4900e
+          command: ["tcp-proxy"]
+          args: ["-l", "0.0.0.0:8080", "-r", "minimal-2-extname-service:9080"]
+          ports:
+            - containerPort: 8080
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: minimal-2-extname-service
+spec:
+  type: ExternalName
+  externalName: host.docker.internal
