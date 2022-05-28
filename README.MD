@@ -2,7 +2,9 @@
 
 Kubebkwd (pronounced 'cube backward') is a script which sets up a reverse proxy from your local kubernetes cluster to an application running natively on your machine that you can debug or change out to your heart's content. This allows you to debug your application with the full benefit of 
 
-Kubebkwd is essentially an attempt at a simplified Telepresence. Telepresence is an amazing tool but one which has a great deal of complexity, we've found has had some compatibility issues with certain verisons of MacOS and such. The trade offs are that it uses almost entirely only high-level kubernetes constructs and only a very minimal tcp reverse proxy and requires no special network manipulation on the host machine outside of what is set up by e.g. docker for desktop already.
+Kubebkwd is essentially an attempt at a simplified Telepresence. Telepresence is an amazing tool but one which has a great deal of complexity, we've found has had some compatibility issues with certain verisons of MacOS and such. The trade offs are that Kubebkwd instead uses almost entirely only high-level kubernetes constructs and only a very minimal tcp reverse proxy. Kubebkwd requires no special network manipulation on the host machine outside of what is set up by e.g. docker for desktop already which hopefully should make it more robust to different system configurations. 
+
+This also means that it will only work with local Kubernetes clusters unless you do something special to expose your machine with a host domain from a remote cluster. 
 
 The usage is just:
 
